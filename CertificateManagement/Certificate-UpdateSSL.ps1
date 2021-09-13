@@ -6,8 +6,8 @@ $Certificate=Get-ChildItem Cert:\LocalMachine\My | Where {$_.FriendlyName -like 
 
 ForEach($Binding in $Bindings){
 
-  $Binding | Remove-Item -Force
+  $Binding | Remove-Item
 
-  $certificate | New-Item -path "IIS:\SslBindings\$($binding.IPAddress)!$($binding.Port)" -Force
+  $certificate | New-Item -path "IIS:\SslBindings\$($binding.IPAddress)!$($binding.Port)"
 
 }
