@@ -1,7 +1,7 @@
 Import-Module WebAdministration
 
 #Set log file
-$logfile = "E:\Sites\CertificateUpdate.txt"
+$logfile = "E:\Sites\CertificateUpdate-2021.txt"
 
 #Get Certificate details
 $Certificate = Get-ChildItem Cert:\LocalMachine\My | Where { $_.FriendlyName -like "Wildcard*2021*" }
