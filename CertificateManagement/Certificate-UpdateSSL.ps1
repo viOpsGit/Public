@@ -45,6 +45,9 @@ ForEach ($Binding in $Bindings) {
 
     $Binding | Remove-Item -Force
     $certificate | New-Item -path "IIS:\SslBindings\$($binding.IPAddress)!$($binding.Port)" -Force
+
+    $logmessage = "Updated SSL bindings with new certificate thumbprint"
+    $logmessage >> $logfile
 }
 }
 Catch{
@@ -52,5 +55,3 @@ Catch{
     $logmessage >> $logfile
     $_ >> $logfile
 }
-
-
