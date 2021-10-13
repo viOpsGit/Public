@@ -38,41 +38,6 @@ Catch {
     $_ >> $logfile
 }
 
-###Update Certificate thumbprint
-
-$filelocs=@( Get-ChildItem -recurse -filter "web.config" -Path "E:\Sites\")
-
-	###create array with what to look for and what to change to 
-	$Dictionary = @{
-		"LocalCertificateSerialNumber"    = $Certificate.SerialNumber
-			
-	}
-
-ForEach ($file in $filelocs) {			
-				
-	#### grab as xml
-	## $xml = Get-Content $filexists -as [Xml]  ###another way of writting it bellow
-	$xml = [xml](Get-Content $file.FullName)										
-
-
-	foreach($key in $Dictionary.Keys)
-	{
-		######Use XPath to find the appropriate node
-		if(($addKey = $xml.SelectSingleNode("//appSettings/add[@key = '$key']")))
-		{
-			#Write-Host "Found key: '$key' in XML, updating value to $($Dictionary[$key])"
-			$addKey.SetAttribute('value',$Dictionary[$key])
-
-            $logmessage = "Web Config files completed successfully for $($file.fullname) and $key" 
-            $logmessage >> $logfile
-            $_ >> $logfile
-		}
-							
-		####save changes
-		$xml.Save($file.FullName)
-	}					
-}
-
 ###
 ###Get and replace all site bindings with the new certificate
 ###
@@ -95,3 +60,29 @@ Catch{
     $_ >> $logfile
 }
 
+###Update Certificate thumbprint
+$filelocs = @( Get-ChildItem -recurse -filter "web.config" -Path "E:\Sites\")
+
+ForEach ($file in $filelocs) {
+	#### grab as xml
+	$xml = [xml](Get-Content $file.FullName)
+												
+	###create array with what to look for and what to change to 
+	$Dictionary = @{
+		"LocalCertificateSerialNumber" = $Certificate.SerialNumber			
+	}
+
+	foreach ($key in $Dictionary.Keys) {
+		######Use XPath to find the appropriate node
+		if (($addKey = $xml.SelectSingleNode("//appSettings/add[@key = '$key']"))) {
+
+			$addKey.SetAttribute('value', $Dictionary[$key])
+
+			$logmessage = "Web Config files completed successfully for $($file.fullname) and $key" 
+			$logmessage >> $logfile
+			$_ >> $logfile
+		}							
+		####save changes
+		$xml.Save($file)
+	}					
+}
