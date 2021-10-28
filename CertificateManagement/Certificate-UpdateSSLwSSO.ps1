@@ -4,7 +4,7 @@ Import-Module WebAdministration
 $logfile = "E:\Sites\CertificateUpdate-2022.txt"
 
 #Get Certificate details
-$Certificate = Get-ChildItem Cert:\LocalMachine\My | Where { $_.FriendlyName -like "Wildcard*2022*" }
+$Certificate = Get-ChildItem Cert:\LocalMachine\My | Where { $_.FriendlyName -like "Wil*2022*" }
 
 ###
 ### Add Permissions to Private Key for built in group IIS_IUSRs
