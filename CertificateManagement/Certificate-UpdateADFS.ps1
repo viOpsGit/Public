@@ -1,10 +1,10 @@
 Import-Module WebAdministration
 
 #Set log file
-$logfile = "E:\Sites\CertificateUpdate-2021.txt"
+$logfile = "E:\Sites\CertificateUpdate-2022.txt"
 
 #Get Certificate details
-$Certificate = Get-ChildItem Cert:\LocalMachine\My | Where { $_.FriendlyName -like "Wildcard*2021*" }
+$Certificate = Get-ChildItem Cert:\LocalMachine\My | Where { $_.FriendlyName -like "Wil*2022*" }
 
 ###
 ### Add Permissions to Private Key for built in group IIS_IUSRs
@@ -38,6 +38,39 @@ Catch {
     $_ >> $logfile
 }
 
+###Update Certificate serial number
+
+$filelocs=@( Get-ChildItem -recurse -filter "web.config" -Path "E:\Sites\")
+
+	###create array with what to look for and what to change to 
+	$Dictionary = @{
+		"LocalCertificateSerialNumber"    = $Certificate.SerialNumber
+			
+	}
+
+ForEach ($file in $filelocs) {			
+				
+	#### grab as xml
+	$xml = [xml](Get-Content $file.FullName)										
+
+	foreach($key in $Dictionary.Keys)
+	{
+		######Use XPath to find the appropriate node
+		if(($addKey = $xml.SelectSingleNode("//appSettings/add[@key = '$key']")))
+		{
+			#Write-Host "Found key: '$key' in XML, updating value to $($Dictionary[$key])"
+			$addKey.SetAttribute('value',$Dictionary[$key])
+
+            $logmessage = "Web Config files completed successfully for $($file.fullname) and $key" 
+            $logmessage >> $logfile
+            $_ >> $logfile
+		}
+							
+		####save changes
+		$xml.Save($file.FullName)
+	}					
+}
+
 ###
 ###Get and replace all site bindings with the new certificate
 ###
@@ -60,29 +93,19 @@ Catch{
     $_ >> $logfile
 }
 
-###Update Certificate thumbprint
-$filelocs = @( Get-ChildItem -recurse -filter "web.config" -Path "E:\Sites\")
+###Update ADFS MetaData
 
-ForEach ($file in $filelocs) {
-	#### grab as xml
-	$xml = [xml](Get-Content $file.FullName)
-												
-	###create array with what to look for and what to change to 
-	$Dictionary = @{
-		"LocalCertificateSerialNumber" = $Certificate.SerialNumber			
-	}
+$metalocs = @( Get-ChildItem -recurse -filter "federationmetadata.xml" -Path "E:\Sites\")
 
-	foreach ($key in $Dictionary.Keys) {
-		######Use XPath to find the appropriate node
-		if (($addKey = $xml.SelectSingleNode("//appSettings/add[@key = '$key']"))) {
+$xcer=new-object System.Text.StringBuilder
+$xcer.AppendLine([System.Convert]::ToBase64String($Certificate.RawData))
+$cer=$xcer.ToString().Trim()
 
-			$addKey.SetAttribute('value', $Dictionary[$key])
-
-			$logmessage = "Web Config files completed successfully for $($file.fullname) and $key" 
-			$logmessage >> $logfile
-			$_ >> $logfile
-		}							
-		####save changes
-		$xml.Save($file)
-	}					
+ForEach ($meta in $metalocs) {
+	#### grab as plaintext
+	(Get-Content $meta.FullName -raw) -replace "(?<=<X509Certificate>)(.*)(?=<\/X509Certificate>)","$cer" | Set-Content -Path $meta.FullName -Force						
+	
+    $logmessage = "Updating metadata file at $($meta.fullname)"
+	$logmessage >> $logfile
+	$_ >> $logfile				
 }

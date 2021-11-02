@@ -1,3 +1,22 @@
+<#
+Authors: Holly Williams, Abdalla Al Sharif
+Version: 1.1
+Date: 10/29/2021
+
+Objective: To automate SSO updates when a new SSL certificate is installed
+
+Actions:
+Adds permissions to certificate for "IIS_IUSRS" group
+Updates the "LocalCertificateSerialNumber" attribute in web.config files that exist under E:\Sites
+Updates all SSL web bindings to use the new certificate
+Updates 509 certiicate data for federationmetadata.xml files that exist under E:\Sites
+Outputs details to a log file
+
+Pre-requisites: 
+viGlobal wildcard certificate for 2022 must already be installed
+Run as an administrator
+#>
+
 Import-Module WebAdministration
 
 #Set log file
@@ -38,7 +57,7 @@ Catch {
     $_ >> $logfile
 }
 
-###Update Certificate thumbprint
+###Update Certificate serial number
 
 $filelocs=@( Get-ChildItem -recurse -filter "web.config" -Path "E:\Sites\")
 
@@ -51,9 +70,7 @@ $filelocs=@( Get-ChildItem -recurse -filter "web.config" -Path "E:\Sites\")
 ForEach ($file in $filelocs) {			
 				
 	#### grab as xml
-	## $xml = Get-Content $filexists -as [Xml]  ###another way of writting it bellow
 	$xml = [xml](Get-Content $file.FullName)										
-
 
 	foreach($key in $Dictionary.Keys)
 	{
@@ -95,3 +112,19 @@ Catch{
     $_ >> $logfile
 }
 
+###Update ADFS MetaData
+
+$metalocs = @( Get-ChildItem -recurse -filter "federationmetadata.xml" -Path "E:\Sites\")
+
+$xcer=new-object System.Text.StringBuilder
+$xcer.AppendLine([System.Convert]::ToBase64String($Certificate.RawData))
+$cer=$xcer.ToString().Trim()
+
+ForEach ($meta in $metalocs) {
+	#### grab as plaintext
+	(Get-Content $meta.FullName -raw) -replace "(?<=<X509Certificate>)(.*)(?=<\/X509Certificate>)","$cer" | Set-Content -Path $meta.FullName -Force						
+	
+    $logmessage = "Updating metadata file at $($meta.fullname)"
+	$logmessage >> $logfile
+	$_ >> $logfile				
+}
