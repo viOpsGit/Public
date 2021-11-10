@@ -124,7 +124,7 @@ ForEach ($meta in $metalocs) {
 	#### grab as plaintext
 	(Get-Content $meta.FullName -raw) -replace "(?<=<X509Certificate>)(.*)(?=<\/X509Certificate>)","$cer" | Set-Content -Path $meta.FullName -Force						
 	
-    $logmessage = "Updating metadata file at $($meta.fullname)"
+   <# $logmessage = "Updating metadata file at $($meta.fullname)"
 	$logmessage >> $logfile
-	$_ >> $logfile				
+	$_ >> $logfile	#>			
 }
