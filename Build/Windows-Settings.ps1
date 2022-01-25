@@ -33,7 +33,7 @@ Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' 
 (Get-WmiObject -class "Win32_TSGeneralSetting" -Namespace root\cimv2\terminalservices -Filter "TerminalName='RDP-tcp'").SetUserAuthenticationRequired(0)
 
 #Add Support Groups to Local Admin
-Add-LocalGroupMember -Group "Administrators" -Member "videsktop\Support Team A-AD", "videsktop\Support Team B"
+##Removed from this copy
 
 #Set Performance
 
