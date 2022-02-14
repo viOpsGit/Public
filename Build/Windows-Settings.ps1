@@ -16,7 +16,7 @@ Format-Volume -FileSystem NTFS -NewFileSystemLabel $label -Confirm:$false -Force
 New-Item -Path "C:\" -Name "Temp" -ItemType "directory"
 
 ## Copy all required install tools
-Copy-Item -Path "Microsoft.PowerShell.Core\FileSystem::\\viopsc001\Installs\Auto\*" -Destination C:\Temp\
+Copy-Item -Path "Microsoft.PowerShell.Core\FileSystem::\\viopsc002\Installs\Auto\*" -Destination C:\Temp\
 
 ## Check that file exists and Install IIS
 If (Test-Path -Path C:\Temp\IIS-DeploymentConfigTemplate.xml){
