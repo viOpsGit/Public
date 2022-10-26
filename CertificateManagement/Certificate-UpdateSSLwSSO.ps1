@@ -13,17 +13,35 @@ Updates 509 certiicate data for federationmetadata.xml files that exist under E:
 Outputs details to a log file
 
 Pre-requisites: 
-viGlobal wildcard certificate for 2022 must already be installed
+viGlobal wildcard certificate for 2023 must already be installed
 Run as an administrator
 #>
+If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
+{
+  # Relaunch as an elevated process:
+  Start-Process powershell.exe "-File",('"{0}"' -f $MyInvocation.MyCommand.Path) -Verb RunAs
+  exit
+}
+# Now running elevated so launch the script:
 
 Import-Module WebAdministration
 
 #Set log file
-$logfile = "E:\Sites\CertificateUpdate-2022.txt"
+$logfile = "E:\Sites\CertificateUpdate-2023.txt"
 
 #Get Certificate details
-$Certificate = Get-ChildItem Cert:\LocalMachine\My | Where { $_.FriendlyName -like "Wil*2022*" }
+$Certificate = Get-ChildItem Cert:\LocalMachine\My | Where { $_.FriendlyName -like "wildcard-viglobalcloud-2023" } -ErrorAction SilentlyContinue
+
+if ($Certificate){
+
+    $logmessage = "Certificate found - beginning adding permissions"
+    $logmessage >> $logfile
+}
+else {
+    $logmessage = "Unable to find certificate"
+    $logmessage >> $logfile
+    exit 404
+}
 
 ###
 ### Add Permissions to Private Key for built in group IIS_IUSRs
@@ -67,27 +85,30 @@ $filelocs=@( Get-ChildItem -recurse -filter "web.config" -Path "E:\Sites\")
 			
 	}
 
-ForEach ($file in $filelocs) {			
-				
-	#### grab as xml
-	$xml = [xml](Get-Content $file.FullName)										
+ForEach ($file in $filelocs) {
 
-	foreach($key in $Dictionary.Keys)
-	{
-		######Use XPath to find the appropriate node
-		if(($addKey = $xml.SelectSingleNode("//appSettings/add[@key = '$key']")))
-		{
-			#Write-Host "Found key: '$key' in XML, updating value to $($Dictionary[$key])"
-			$addKey.SetAttribute('value',$Dictionary[$key])
+    #### grab as xml
+    $xml = [xml](Get-Content $file.FullName)									
+
+    foreach($key in $Dictionary.Keys)
+    {
+        ######Use XPath to find the appropriate node
+        if(($addKey = $xml.SelectSingleNode("//appSettings/add[@key = '$key']")))
+        {
+
+            $logmessage = "Found serial in $file, updating value to $($Dictionary[$key])" 
+            $logmessage >> $logfile
+
+            Copy-Item $file.fullname -Destination "$($file)-2023.bak" -Force
+            $addKey.SetAttribute('value',$Dictionary[$key])
 
             $logmessage = "Web Config files completed successfully for $($file.fullname) and $key" 
             $logmessage >> $logfile
             $_ >> $logfile
-		}
-							
-		####save changes
-		$xml.Save($file.FullName)
-	}					
+        ####save changes
+        $xml.Save($file.FullName)
+        }
+    }			
 }
 
 ###
@@ -95,7 +116,7 @@ ForEach ($file in $filelocs) {
 ###
 
 Try{
-    $Bindings = get-item IIS:\SslBindings\* | where { $_.port -eq 443 }
+    $Bindings = get-item IIS:\SslBindings\* | where { $_.host -like "*viglobalcloud*" }
 
 ForEach ($Binding in $Bindings) {
 
@@ -110,21 +131,4 @@ Catch{
     $logmessage = "Unable to add read permissions to private key for IIS_IUSRS"
     $logmessage >> $logfile
     $_ >> $logfile
-}
-
-###Update ADFS MetaData
-
-$metalocs = @( Get-ChildItem -recurse -filter "federationmetadata.xml" -Path "E:\Sites\")
-
-$xcer=new-object System.Text.StringBuilder
-$xcer.AppendLine([System.Convert]::ToBase64String($Certificate.RawData))
-$cer=$xcer.ToString().Trim()
-
-ForEach ($meta in $metalocs) {
-	#### grab as plaintext
-	(Get-Content $meta.FullName -raw) -replace "(?s)(?<=<X509Certificate>)(.*)(?=<\/X509Certificate>)","$cer" | Set-Content -Path $meta.FullName -Force						
-	
-   <# $logmessage = "Updating metadata file at $($meta.fullname)"
-	$logmessage >> $logfile
-	$_ >> $logfile	#>			
 }

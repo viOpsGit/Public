@@ -1,10 +1,10 @@
 Import-Module WebAdministration
 
 #Set log file
-$logfile = "E:\Sites\CertificateUpdate-2022.txt"
+$logfile = "E:\Sites\CertificateUpdate-2023.txt"
 
 #Get Certificate details
-$Certificate = Get-ChildItem Cert:\LocalMachine\My | Where { $_.FriendlyName -like "Wil*2022*" }
+$Certificate = Get-ChildItem Cert:\LocalMachine\My | Where { $_.FriendlyName -like "*viglobalcloud-2023*" }
 
 ###
 ### Add Permissions to Private Key for built in group IIS_IUSRs
@@ -29,11 +29,13 @@ Try {
 
     $logmessage = "Successfully added read permissions to private key for IIS_IUSRS"
     $logmessage >> $logfile
-
+    exit 0
 }
+
 Catch {
 
     $logmessage = "Unable to add read permissions to private key for IIS_IUSRS"
     $logmessage >> $logfile
     $_ >> $logfile
+    exit 405
 }
