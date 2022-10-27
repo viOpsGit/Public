@@ -1,15 +1,15 @@
 <#
 Authors: Holly Williams, Abdalla Al Sharif
-Version: 1.1
-Date: 10/29/2021
+Version: 1.2
+Date: 10/26/2022
 
 Objective: To automate SSO updates when a new SSL certificate is installed
 
 Actions:
 Adds permissions to certificate for "IIS_IUSRS" group
-Updates the "LocalCertificateSerialNumber" attribute in web.config files that exist under E:\Sites
+Backups up web.configs with "LocalCertificateSerialNumber" attribute in web.config files that exist under E:\Sites
+Updates files with new serial number
 Updates all SSL web bindings to use the new certificate
-Updates 509 certiicate data for federationmetadata.xml files that exist under E:\Sites
 Outputs details to a log file
 
 Pre-requisites: 
